@@ -1,14 +1,107 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comunidade Cristã de Sairé</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <title>Igreja Campos de Sairé</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        #carousel .slide {
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #F5F7FA;
+            color: #264653;
+            line-height: 1.8;
+        }
+        header {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        header h1 {
+            color: #2A9D8F;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        nav ul {
+            list-style: none;
+        }
+        nav ul li {
+            display: inline;
+            margin: 0 20px;
+        }
+        nav ul li a {
+            text-decoration: none;
+            color: #264653;
+            font-weight: 400;
+            transition: color 0.3s ease;
+        }
+        nav ul li a:hover {
+            color: #E76F51;
+        }
+        main {
+            margin-top: 100px; /* Adjusted for removed header carousel */
+            position: relative;
+            z-index: 1;
+        }
+        .background-carousel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .carousel-slide {
             position: absolute;
             top: 0;
             left: 0;
@@ -19,201 +112,326 @@
             opacity: 0;
             transition: opacity 1s ease-in-out;
         }
-        #carousel .slide.active {
+        .carousel-slide.active {
             opacity: 1;
+        }
+        .carousel-slide:nth-child(1) {
+            background-image: url('imagens/slide1.jpg');
+        }
+        .carousel-slide:nth-child(2) {
+            background-image: url('imagens/slide2.jpg');
+        }
+        .carousel-slide:nth-child(3) {
+            background-image: url('imagens/slide3.jpg');
+        }
+        section {
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        section#inicio {
+            background-color: #E9C46A; /* Mustard */
+            text-align: center;
+            padding: 80px 20px;
+        }
+        section#atualizacoes {
+            background-color: #FFFFFF; /* White */
+        }
+        section#eventos {
+            background-color: #E9C46A; /* Mustard */
+        }
+        section#videos {
+            background-color: #FFFFFF; /* White */
+        }
+        section#sobre {
+            background-color: #E9C46A; /* Mustard */
+        }
+        section#galeria {
+            background-color: #FFFFFF; /* White */
+        }
+        section#localizacao {
+            background-color: #E9C46A; /* Mustard */
+        }
+        .hero h2 {
+            color: #264653;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto 20px;
+        }
+        .button {
+            background-color: #E76F51;
+            color: #FFFFFF;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 700;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+        .button:hover {
+            background-color: #D65C42;
+        }
+        .updates, .events, .videos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 20px;
+        }
+        .updates div, .events div, .videos div {
+            background-color: #FFFFFF;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .updates div.visible, .events div.visible, .videos div.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .updates div:nth-child(1) { transition-delay: 0.1s; }
+        .updates div:nth-child(2) { transition-delay: 0.2s; }
+        .updates div:nth-child(3) { transition-delay: 0.3s; }
+        .events div:nth-child(1) { transition-delay: 0.1s; }
+        .events div:nth-child(2) { transition-delay: 0.2s; }
+        .videos div:nth-child(1) { transition-delay: 0.1s; }
+        .videos div:nth-child(2) { transition-delay: 0.2s; }
+        .videos div:nth-child(3) { transition-delay: 0.3s; }
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .gallery img {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .gallery img.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .gallery img:nth-child(1) { transition-delay: 0.1s; }
+        .gallery img:nth-child(2) { transition-delay: 0.2s; }
+        .gallery img:nth-child(3) { transition-delay: 0.3s; }
+        form {
+            max-width: 700px;
+            margin: 20px auto;
+            background-color: #E9C46A;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #DDE4ED;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+        button {
+            background-color: #F4A261;
+            color: #FFFFFF;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: inline-block;
+            margin: 0 auto;
+        }
+        button:hover {
+            background-color: #E89B4D;
+        }
+        footer {
+            background-color: rgba(255, 255, 255, 0.95);
+            text-align: center;
+            padding: 20px;
+            border-top: 1px solid #DDE4ED;
+            margin-top: 40px;
+            color: #666666;
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
+        }
+        h2 {
+            color: #2A9D8F;
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        @media (max-width: 768px) {
+            header {
+                position: static;
+            }
+            main {
+                margin-top: 10px; /* Adjusted for smaller screens */
+            }
+            .hero {
+                padding: 40px 20px;
+            }
+            .hero h2 {
+                font-size: 1.8rem;
+            }
         }
     </style>
 </head>
-<body class="bg-white font-sans">
-    <!-- Navigation -->
-    <nav class="bg-orange-400 text-white p-4 fixed w-full top-0 z-50">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="text-2xl font-bold">Comunidade Cristã de Sairé</div>
-            <!-- Desktop Menu -->
-            <div class="hidden md:flex space-x-4">
-                <a href="#inicio" class="hover:underline">Início</a>
-                <a href="#eventos" class="hover:underline">Eventos</a>
-                <a href="#videos" class="hover:underline">Vídeos</a>
-                <a href="#sobre" class="hover:underline">Sobre</a>
-                <a href="#localizacao" class="hover:underline">Localização</a>
-            </div>
-            <!-- Hamburger Menu Button -->
-            <button id="menu-btn" class="md:hidden focus:outline-none">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
-                </svg>
-            </button>
-        </div>
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-orange-400 text-white">
-            <a href="#inicio" class="block px-4 py-2 hover:bg-orange-500">Início</a>
-            <a href="#eventos" class="block px-4 py-2 hover:bg-orange-500">Eventos</a>
-            <a href="#videos" class="block px-4 py-2 hover:bg-orange-500">Vídeos</a>
-            <a href="#sobre" class="block px-4 py-2 hover:bg-orange-500">Sobre</a>
-            <a href="#localizacao" class="block px-4 py-2 hover:bg-orange-500">Localização</a>
-        </div>
-    </nav>
-
-    <!-- Hero Section with Carousel -->
-    <section id="inicio" class="relative bg-cover bg-center h-96 flex items-center justify-center text-white mt-16" data-aos="fade-up">
-        <div id="carousel" class="absolute inset-0 z-0">
-            <div id="slide-1" class="slide active" style="background-image: url('img1')"></div>
-            <div id="slide-2" class="slide" style="background-image: url('img2')"></div>
-            <div id="slide-3" class="slide" style="background-image: url('img3')"></div>
-        </div>
-        <div class="relative text-center z-10 bg-black bg-opacity-50 p-6 rounded-lg">
-            <h1 class="text-4xl font-bold mb-4">Bem-vindo à Comunidade Cristã de Sairé</h1>
-            <p class="text-lg mb-6">Junte-se à nossa família em fé, comunhão e serviço.</p>
-            <a href="#eventos" class="bg-red-300 text-black px-6 py-2 rounded-full hover:bg-red-400">Conheça nossos eventos</a>
-        </div>
-    </section>
-
-    <!-- Main Content with Photo Gallery -->
-    <div class="container mx-auto px-4 py-12 flex flex-col md:flex-row gap-8">
-        <!-- Main Content -->
-        <div class="md:w-2/3">
-            <!-- Community Updates -->
-            <section id="atualizacoes" class="mb-12" data-aos="fade-up" data-aos-delay="100">
-                <h2 class="text-3xl font-bold text-center mb-8 text-orange-400">Atualizações da Comunidade</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-gray-50 p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Resumo do Culto de Domingo</h3>
-                        <p class="text-gray-600">Perdeu o culto de domingo? Assista ao resumo e conecte-se com nossa mensagem de esperança.</p>
-                        <a href="#videos" class="text-orange-400 hover:underline">Assistir agora</a>
-                    </div>
-                    <div class="bg-gray-50 p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Encontro de Jovens</h3>
-                        <p class="text-gray-600">Participe do nosso grupo de jovens na sexta-feira para diversão, fé e comunhão!</p>
-                        <a href="#eventos" class="text-orange-400 hover:underline">Saiba mais</a>
-                    </div>
-                    <div class="bg-gray-50 p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Ação Social</h3>
-                        <p class="text-gray-600">Ajude-nos a servir nossa comunidade local neste fim de semana. Inscreva-se como voluntário!</p>
-                        <a href="#localizacao" class="text-orange-400 hover:underline">Participe</a>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Events Section -->
-            <section id="eventos" class="mb-12" data-aos="fade-up" data-aos-delay="200">
-                <h2 class="text-3xl font-bold text-center mb-8 text-orange-400">Próximos Eventos</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-gray-50 p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Culto de Domingo</h3>
-                        <p class="text-gray-600">Junte-se a nós todos os domingos às 10h para culto e comunhão.</p>
-                        <p class="text-gray-500">Local: BR 232, KM 95, Sairé</p>
-                    </div>
-                    <div class="bg-gray-50 p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Estudo Bíblico</h3>
-                        <p class="text-gray-600">Estudo bíblico semanal às quartas-feiras às 19h. Aberto a todos!</p>
-                        <p class="text-gray-500">Local: Salão da Igreja</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Videos Section -->
-            <section id="videos" class="mb-12" data-aos="fade-up" data-aos-delay="300">
-                <h2 class="text-3xl font-bold text-center mb-8 text-orange-400">Vídeos Recentes</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-gray-50 p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Encontrando Paz na Fé</h3>
-                        <p class="text-gray-600">Sermão de 25 de maio de 2025</p>
-                        <a href="#" class="text-orange-400 hover:underline">Assistir agora</a>
-                    </div>
-                    <div class="bg-gray-50 p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Ame o Seu Próximo</h3>
-                        <p class="text-gray-600">Sermão de 18 de maio de 2025</p>
-                        <a href="#" class="text-orange-400 hover:underline">Assistir agora</a>
-                    </div>
-                    <div class="bg-gray-50 p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Força na Comunidade</h3>
-                        <p class="text-gray-600">Sermão de 11 de maio de 2025</p>
-                        <a href="#" class="text-orange-400 hover:underline">Assistir agora</a>
-                    </div>
-                </div>
-            </section>
-
-            <!-- About Section -->
-            <section id="sobre" class="mb-12" data-aos="fade-up" data-aos-delay="400">
-                <h2 class="text-3xl font-bold text-center mb-8 text-orange-400">Sobre Nós</h2>
-                <div class="max-w-2xl mx-auto text-center">
-                    <p class="text-gray-600">A Comunidade Cristã de Sairé é um lugar de amor, fé e comunhão. Nossa missão é compartilhar a palavra de Deus e construir uma comunidade acolhedora para todos. Junte-se a nós para crescer espiritualmente e fazer a diferença em Sairé!</p>
-                </div>
-            </section>
-        </div>
-
-        <!-- Photo Gallery (Right Sidebar) -->
-        <div class="md:w-1/3" data-aos="fade-left" data-aos-delay="500">
-            <h2 class="text-2xl font-bold mb-4 text-orange-400">Galeria de Fotos</h2>
-            <div class="grid grid-cols-1 gap-4">
-                <img src="img1" alt="Culto da Comunidade" class="rounded-lg shadow-md w-full h-48 object-cover">
-                <img src="img2" alt="Momento de Oração" class="rounded-lg shadow-md w-full h-48 object-cover">
-                <img src="img3" alt="Evento Comunitário" class="rounded-lg shadow-md w-full h-48 object-cover">
-            </div>
-        </div>
+<body>
+    <div class="background-carousel">
+        <div class="carousel-slide active"></div>
+        <div class="carousel-slide"></div>
+        <div class="carousel-slide"></div>
     </div>
-
-    <!-- Location Section -->
-    <section id="localizacao" class="bg-gray-50 py-12" data-aos="fade-up" data-aos-delay="600">
-        <div class="container mx-auto px-4">
-            <h2 class="text-3xl font-bold text-center mb-8 text-orange-400">Localização e Contato</h2>
-            <div class="max-w-lg mx-auto">
-                <p class="text-gray-600 mb-4">Email: contato@comunidadecrista.org</p>
-                <p class="text-gray-600 mb-4">Telefone: (81) 98765-4321</p>
-                <p class="text-gray-600 mb-4">Endereço: BR 232, KM 95, Condomínio Vista Alegre S/N, Rua D, Lote 05, Bairro Insurreição, Sairé, PE, CEP 55695-000</p>
-                <div class="mt-6">
-                    <h3 class="text-xl font-semibold mb-2 text-gray-800">Envie-nos uma Mensagem</h3>
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <input type="text" placeholder="Seu Nome" class="w-full p-2 mb-4 border rounded">
-                        <input type="email" placeholder="Seu Email" class="w-full p-2 mb-4 border rounded">
-                        <textarea placeholder="Sua Mensagem" class="w-full p-2 mb-4 border rounded" rows="4"></textarea>
-                        <button class="bg-red-300 text-black px-6 py-2 rounded-full hover:bg-red-400">Enviar Mensagem</button>
-                    </div>
+    <header>
+        <h1>Igreja Campos de Sairé</h1>
+        <nav>
+            <ul>
+                <li><a href="#inicio">Início</a></li>
+                <li><a href="#eventos">Eventos</a></li>
+                <li><a href="#videos">Vídeos</a></li>
+                <li><a href="#sobre">Sobre</a></li>
+                <li><a href="#localizacao">Localização</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section id="inicio" class="hero">
+            <h2>Bem-vindo à Igreja Campos de Sairé</h2>
+            <p>Junte-se à nossa família em fé, comunhão e serviço.</p>
+            <a href="#eventos" class="button" aria-label="Conheça nossos eventos">Conheça nossos eventos</a>
+        </section>
+        <section id="atualizacoes">
+            <h2>Atualizações da Comunidade</h2>
+            <div class="updates">
+                <div>
+                    <h3>Resumo do Culto de Domingo</h3>
+                    <p>Perdeu o culto de domingo? Assista ao resumo e conecte-se com nossa mensagem de esperança.</p>
+                    <a href="https://www.youtube.com/watch?v=EPzr6SK6lmE" class="button" aria-label="Assistir resumo do culto de domingo">Assistir agora</a>
+                </div>
+                <div>
+                    <h3>Encontro de Jovens</h3>
+                    <p>Participe do nosso grupo de jovens na sexta-feira para diversão, fé e comunhão!</p>
+                    <a href="#eventos" class="button" aria-label="Saiba mais sobre o encontro de jovens">Saiba mais</a>
+                </div>
+                <div>
+                    <h3>Ação Social</h3>
+                    <p>Ajude-nos a servir nossa comunidade local neste fim de semana. Inscreva-se como voluntário!</p>
+                    <a href="#localizacao" class="button" aria-label="Participe da ação social">Participe</a>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="bg-orange-400 text-white py-6">
-        <div class="container mx-auto px-4 text-center">
-            <p>© 2025 Comunidade Cristã de Sairé. Todos os direitos reservados.</p>
-        </div>
+        </section>
+        <section id="eventos">
+            <h2>Próximos Eventos</h2>
+            <div class="events">
+                <div>
+                    <h3>Culto de Domingo</h3>
+                    <p>Junte-se a nós todos os domingos às 10h para culto e comunhão.</p>
+                    <p>Local: BR 232, KM 95, Sairé</p>
+                </div>
+                <div>
+                    <h3>Estudo Bíblico</h3>
+                    <p>Estudo bíblico semanal às quartas-feiras às 19h. Aberto a todos!</p>
+                    <p>Local: Salão da Igreja</p>
+                </div>
+            </div>
+        </section>
+        <section id="videos">
+            <h2>Vídeos Recentes</h2>
+            <div class="videos">
+                <div>
+                    <h3>Encontrando Paz na Fé</h3>
+                    <p>Sermão de 22 de fevereiro de 2025</p>
+                    <a href="https://www.youtube.com/watch?v=S05WeU4c2tE" class="button" aria-label="Assistir sermão de 22 de fevereiro">Assistir agora</a>
+                </div>
+                <div>
+                    <h3>Ame o Seu Próximo</h3>
+                    <p>Sermão de 09 de maio de 2025</p>
+                    <a href="https://www.youtube.com/watch?v=C8emAdJjd1M" class="button" aria-label="Assistir sermão de 09 de maio">Assistir agora</a>
+                </div>
+                <div>
+                    <h3>Força na Comunidade</h3>
+                    <p>Sermão de 10 de maio de 2025</p>
+                    <a href="https://www.youtube.com/watch?v=TPmksn4G9kg" class="button" aria-label="Assistir sermão de 10 de maio">Assistir agora</a>
+                </div>
+            </div>
+        </section>
+        <section id="sobre">
+            <h2>Sobre</h2>
+            <p>A Igreja Campos de Sairé é um lugar de amor, fé e comunhão. Nossa missão é compartilhar a palavra de Deus e construir uma comunidade acolhedora para todos. Junte-se a nós para crescer espiritualmente e fazer a diferença em Sairé!</p>
+        </section>
+        <section id="galeria">
+            <h2>Galeria de Fotos</h2>
+            <div class="gallery">
+                <img src="imagens/culto1.jpeg" alt="Culto de domingo na Igreja Campos de Sairé">
+                <img src="imagens/jovens.jpeg" alt="Encontro de jovens da comunidade">
+                <img src="imagens/acao-social.jpeg" alt="Ação social em Sairé">
+            </div>
+        </section>
+        <section id="localizacao">
+            <h2>Localização e Contato</h2>
+            <p>Email: Miluunick@gmail.com</p>
+            <p>Telefone: (87) 9197-2479</p>
+            <p>Endereço: BR 232, KM 95, Condomínio Vista Alegre S/N, Rua D, Lote 05, Bairro Insurreição, Sairé, PE, CEP 55695-000</p>
+            <form action="/enviar-mensagem" method="POST">
+                <h3>Envie-nos uma Mensagem</h3>
+                <input type="text" name="nome" placeholder="Seu Nome" required>
+                <input type="email" name="email" placeholder="Seu Email" required>
+                <textarea name="mensagem" placeholder="Sua Mensagem" required></textarea>
+                <button type="submit" aria-label="Enviar mensagem de contato">Enviar Mensagem</button>
+            </form>
+        </section>
+    </main>
+    <footer>
+        <p>© 2025 Igreja Campos de Sairé. Todos os direitos reservados.</p>
     </footer>
-
-    <!-- JavaScript for Hamburger Menu, AOS, and Carousel -->
     <script>
-        // Initialize AOS
-        AOS.init({
-            duration: 800,
-            once: true
-        });
+        // Carrossel de fundo
+        const bgSlides = document.querySelectorAll('.carousel-slide');
+        let bgCurrentSlide = 0;
 
-        // Hamburger Menu Toggle
-        const menuBtn = document.getElementById('menu-btn');
-        const mobileMenu = document.getElementById('mobile-menu');
-        menuBtn.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
-        });
+        function showNextBgSlide() {
+            bgSlides[bgCurrentSlide].classList.remove('active');
+            bgCurrentSlide = (bgCurrentSlide + 1) % bgSlides.length;
+            bgSlides[bgCurrentSlide].classList.add('active');
+        }
 
-        // Carousel
-        const slides = document.querySelectorAll('#carousel .slide');
-        let currentSlide = 0;
+        bgSlides[bgCurrentSlide].classList.add('active');
+        setInterval(showNextBgSlide, 5000);
 
-        function showSlide(index) {
-            slides.forEach((slide, i) => {
-                slide.classList.toggle('active', i === index);
+        // Intersection Observer para efeito de rolagem
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
             });
-        }
+        }, { threshold: 0.2 });
 
-        function nextSlide() {
-            currentSlide = (currentSlide + 1) % slides.length;
-            showSlide(currentSlide);
-        }
+        document.querySelectorAll('.updates div, .events div, .videos div, .gallery img').forEach(item => {
+            observer.observe(item);
+        });
 
-        // Change slide every 5 seconds
-        setInterval(nextSlide, 5000);
-        showSlide(currentSlide); // Show first slide initially
+        // JavaScript para formulário
+        document.querySelector('form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            alert('Mensagem enviada com sucesso!');
+        });
     </script>
 </body>
 </html>
